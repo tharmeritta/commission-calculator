@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แดชบอร์ดคำนวณค่าคอมมิชชั่น</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #111827; /* bg-gray-900 */
+        }
+        .card {
+            background-color: #1f2937; /* bg-gray-800 */
+            border: 1px solid #374151; /* border-gray-700 */
+            border-radius: 0.75rem; /* rounded-xl */
+            padding: 1.5rem; /* p-6 */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .input-field {
+            background-color: #374151; /* bg-gray-700 */
+            color: #d1d5db; /* text-gray-300 */
+            border: 1px solid #4b5563; /* border-gray-600 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.75rem 1rem;
+            width: 100%;
+        }
+        .input-field:disabled {
+            background-color: #4b5563; /* bg-gray-600 */
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* bg-blue-600 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* bg-blue-700 */
+        }
+        .btn-primary:disabled {
+            background-color: #4b5563; /* bg-gray-600 */
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #374151; /* bg-gray-700 */
+            color: #d1d5db; /* text-gray-300 */
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            border: 1px solid #4b5563; /* border-gray-600 */
+            transition: background-color 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563; /* bg-gray-600 */
+        }
+        .toggle-label {
+            width: 80px;
+            height: 40px;
+            background: #374151;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .toggle-label:before {
+            content: '';
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            background: white;
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+            transition: transform 0.3s;
+        }
+        input[type="checkbox"]:checked + .toggle-label:before {
+            transform: translateX(40px);
+        }
+        .close-btn {
+            font-size: 2.5rem;
+            line-height: 1;
+            font-weight: bold;
+        }
+        .mission-icon {
+            transition: all 0.4s ease-in-out;
+            filter: grayscale(100%) opacity(0.3);
+            color: #6b7280; /* gray-500 */
+        }
+        .mission-icon.achieved {
+             filter: grayscale(0%) opacity(1);
+             transform: scale(1.1);
+             color: #60a5fa; /* blue-400 */
+             box-shadow: 0 0 10px rgba(96, 165, 250, 0.6);
+             border-radius: 50%; /* to make the box-shadow circular */
+        }
+        .checkpoint {
+            position: absolute;
+            bottom: -5px;
+            width: 2px;
+            height: 10px;
+            background-color: #9ca3af; /* gray-400 */
+            transition: background-color 0.3s;
+        }
+         .checkpoint.achieved {
+             background-color: #f59e0b; /* amber-500 */
+             box-shadow: 0 0 8px #f59e0b;
+        }
+        #agentCommissionProgressBar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem; /* 12px */
+            font-weight: 600; /* semibold */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-gray-200 p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white">แดชบอร์ดคำนวณค่าคอมมิชชั่น</h1>
+            <p class="text-gray-400 mt-2">นำเข้าข้อมูล Agent และตั้งค่าเพื่อคำนวณผลลัพธ์</p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left Column: Inputs & Settings -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- Agent Zone -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">โซนข้อมูล Agent</h2>
+                    
+                    <input type="file" id="csvFileInput" class="hidden" accept=".csv,.txt">
+                    <button id="importFileBtn" class="btn-primary w-full mb-4">นำเข้าข้อมูลจากไฟล์</button>
+
+                    <p class="text-sm text-gray-400 mb-2 text-center">หรือ วางข้อมูล ที่นี่</p>
+                    <p class="text-xs text-gray-500 mb-4">รูปแบบ: Agent	Personal target	Clients (คั่นด้วย Tab)</p>
+                    <textarea id="agentData" class="input-field w-full h-48 resize-none" placeholder="เช่น&#10;Bonus Young	9	2&#10;Patty Goutn	7	3"></textarea>
+                    <button id="calculateBtn" class="btn-primary w-full mt-4">คำนวณข้อมูล</button>
+                </div>
+
+                <!-- Settings Zone -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">ตั้งค่าการคำนวณ</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="deskTarget" class="block text-sm font-medium mb-1">เป้าหมายทีม (Desk Target)</label>
+                            <input type="number" id="deskTarget" class="input-field" value="150" placeholder="ใส่เป้าหมายรวมของทีม">
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="exchangeRate" class="block text-sm font-medium">อัตราแลกเปลี่ยน (USD to THB)</label>
+                                <span id="rateStatus" class="text-xs text-blue-400"></span>
+                            </div>
+                            <input type="number" id="exchangeRate" class="input-field" value="36.50" step="0.01" placeholder="เช่น 36.50">
+                        </div>
+                        <div class="flex items-center justify-between pt-2">
+                             <div>
+                                <label class="block text-sm font-medium">โหมดคำนวณภาษี</label>
+                                <span id="taxModeLabel" class="text-xs text-gray-400">อัตโนมัติ</span>
+                             </div>
+                            <div class="flex items-center gap-4">
+                               <input type="checkbox" id="taxModeToggle" class="hidden">
+                               <label for="taxModeToggle" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div id="manualTaxOptions" class="hidden space-y-2">
+                            <label class="block text-sm font-medium">เลือกเปอร์เซ็นต์ภาษี (Manual)</label>
+                            <select id="manualTaxRate" class="input-field">
+                                <option value="5">5%</option>
+                                <option value="10">10%</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="openBreakdownBtn" class="btn-secondary w-full mt-6">ดูรายละเอียดการคำนวณ</button>
+                </div>
+                
+                 <!-- Simulation Zone -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">โหมดจำลองสถานการณ์</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="simulationTarget" class="block text-sm font-medium mb-1">ยอดคอมมิชชั่นสุทธิที่ต้องการ (THB)</label>
+                            <input type="number" id="simulationTarget" class="input-field" placeholder="เช่น 20000">
+                        </div>
+                    </div>
+                    <button id="simulateBtn" class="btn-primary w-full mt-4">เริ่มจำลอง</button>
+                </div>
+
+                <!-- AI Simulation Zone -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-600 pb-3">ผู้ช่วย AI จำลองสถานการณ์</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="aiQuery" class="block text-sm font-medium mb-1">ถาม AI เพื่อวางแผน</label>
+                            <textarea id="aiQuery" class="input-field w-full h-24 resize-none" placeholder="เช่น: ต้องการ 35,000 บาท โดยไม่ให้ยอดทีมเกิน 190"></textarea>
+                        </div>
+                    </div>
+                    <button id="askAiBtn" class="btn-primary w-full mt-4 flex items-center justify-center gap-2">
+                        <span id="aiBtnText">สอบถาม AI</span>
+                        <div id="aiBtnSpinner" class="spinner hidden"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Results & Dashboard -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="card text-center">
+                        <h3 class="text-lg font-medium text-gray-400">โบนัสทีม (USD)</h3>
+                        <p id="deskBonusDisplay" class="text-3xl font-bold text-green-400 mt-2">$0</p>
+                        <p id="deskAchievedDisplay" class="text-sm text-gray-500 mt-1">0% ของเป้าหมาย</p>
+                    </div>
+                    <div class="card text-center">
+                        <h3 class="text-lg font-medium text-gray-400">ภาษีเงินได้ (THB)</h3>
+                        <p id="taxAmountDisplay" class="text-3xl font-bold text-red-400 mt-2">- ฿0.00</p>
+                        <p id="taxRateDisplay" class="text-sm text-gray-500 mt-1">คำนวณแบบ Auto (0%)</p>
+                    </div>
+                    <div class="card text-center">
+                        <h3 class="text-lg font-medium text-gray-400">ยอดสุทธิที่จ่าย (THB)</h3>
+                        <p id="netPayoutDisplay" class="text-3xl font-bold text-blue-400 mt-2">฿0.00</p>
+                        <p id="totalCommissionTHB" class="text-sm text-gray-500 mt-1">รวมคอมมิชชั่น ฿0.00</p>
+                    </div>
+                </div>
+
+                <!-- Goal Tracker Card -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4">กระดานภารกิจ</h2>
+                    <div class="space-y-8">
+                        <!-- Desk Target Quest -->
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-base font-medium text-gray-300">ภารกิจ: โบนัสทีม</label>
+                                <span id="deskProgressPercentage" class="text-base font-bold text-gray-300">0.00%</span>
+                            </div>
+                            <div class="relative w-full bg-gray-600 rounded-full h-5">
+                                <div id="deskProgressBar" class="bg-blue-600 h-5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                <!-- Checkpoints -->
+                                <div id="checkpoint100" class="checkpoint" style="left: calc(100% * (100 / 120));"></div>
+                                <div id="checkpoint110" class="checkpoint" style="left: calc(100% * (110 / 120));"></div>
+                                <div id="checkpoint120" class="checkpoint" style="left: 100%;"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-400 mt-2 px-1">
+                                <span id="bonusLabel100">$200 @ 100%</span>
+                                <span id="bonusLabel110">$250 @ 110%</span>
+                                <span id="bonusLabel120">$300 @ 120%</span>
+                            </div>
+                        </div>
+                        <!-- Agent Headcount Quest -->
+                        <div>
+                            <div class="flex justify-between items-center mb-3">
+                                <label id="agentQuestLabel" class="text-base font-medium text-gray-300">ภารกิจ: รวมพลัง Agent</label>
+                                <span id="agentHeadcountStatus" class="text-lg font-bold text-red-400">0 / 9</span>
+                            </div>
+                            <div id="agentHeadcountIcons" class="flex justify-center items-center gap-2 flex-wrap">
+                                <!-- Icons will be generated by JS -->
+                            </div>
+                            <div id="agentCommissionQuestProgress" class="hidden">
+                                <div class="relative w-full bg-gray-600 rounded-full h-5 mt-2">
+                                    <div id="agentCommissionProgressBar" class="bg-purple-600 h-5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                    <!-- THB Checkpoints -->
+                                    <div id="thb_checkpoint_5k" class="checkpoint" style="left: calc(100% * (5000 / 25000));"></div>
+                                    <div id="thb_checkpoint_9k" class="checkpoint" style="left: calc(100% * (9000 / 25000));"></div>
+                                    <div id="thb_checkpoint_15k" class="checkpoint" style="left: calc(100% * (15000 / 25000));"></div>
+                                    <div id="thb_checkpoint_18k" class="checkpoint" style="left: calc(100% * (18000 / 25000));"></div>
+                                    <div id="thb_checkpoint_20k" class="checkpoint" style="left: calc(100% * (20000 / 25000));"></div>
+                                    <div id="thb_checkpoint_25k" class="checkpoint" style="left: 100%;"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-400 mt-2 px-1">
+                                    <span>฿5k</span><span>฿9k</span><span>฿15k</span><span>฿18k</span><span>฿20k</span><span>฿25k</span>
+                                </div>
+                            </div>
+                            <p id="agentQuestDescription" class="text-xs text-gray-500 text-center mt-3">ต้องมี Agent ทำได้ 100% ครบ 9 คน เพื่อปลดล็อกโบนัส $30</p>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Performance Graph -->
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4">
+                       <h2 class="text-xl font-semibold text-white">ภาพรวมประสิทธิภาพของ Agent</h2>
+                       <button id="openGraphPopupBtn" class="btn-secondary">ขยาย</button>
+                    </div>
+                    <div class="relative h-96">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Agent Commission Table -->
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-white mb-4">สรุปค่าคอมมิชชั่นของ Agent</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="border-b border-gray-600">
+                                <tr>
+                                    <th class="p-3">ชื่อ Agent</th>
+                                    <th class="p-3 text-right">Target</th>
+                                    <th class="p-3 text-right">Achieved</th>
+                                    <th class="p-3 text-right">Achieved %</th>
+                                    <th class="p-3 text-right">ค่าคอมมิชชั่น (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="agentTableBody">
+                                <!-- Data will be populated by JavaScript -->
+                                <tr>
+                                    <td colspan="5" class="text-center p-8 text-gray-500">โปรดนำเข้าข้อมูล Agent เพื่อเริ่มการคำนวณ</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Graph Popup Modal -->
+    <div id="graphPopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="card w-full max-w-5xl h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-3">
+                <h2 class="text-xl font-semibold text-white">ภาพรวมประสิทธิภาพของ Agent (ขยาย)</h2>
+                <button id="closeGraphPopupBtn" class="text-gray-400 hover:text-white close-btn">&times;</button>
+            </div>
+            <div class="relative flex-grow">
+                <canvas id="popupPerformanceChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculation Breakdown Popup Modal -->
+    <div id="breakdownPopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="card w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-3">
+                <h2 class="text-xl font-semibold text-white">รายละเอียดการคำนวณ</h2>
+                <button id="closeBreakdownPopupBtn" class="text-gray-400 hover:text-white close-btn">&times;</button>
+            </div>
+            <div id="breakdownContent" class="overflow-y-auto pr-2 text-sm">
+                <!-- Breakdown content will be generated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Simulation Popup Modal -->
+    <div id="simulationPopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="card w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-3">
+                <h2 class="text-xl font-semibold text-white">ผลการจำลองสถานการณ์</h2>
+                <button id="closeSimulationPopupBtn" class="text-gray-400 hover:text-white close-btn">&times;</button>
+            </div>
+            <div id="simulationResults" class="overflow-y-auto pr-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Simulation results will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Response Popup Modal -->
+    <div id="aiResponsePopup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="card w-full max-w-5xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-3">
+                <h2 class="text-xl font-semibold text-white">ผลการจำลองจาก AI</h2>
+                <button id="closeAiResponsePopupBtn" class="text-gray-400 hover:text-white close-btn">&times;</button>
+            </div>
+            <div class="overflow-y-auto pr-2">
+                <div id="aiSummary" class="p-3 bg-gray-900 rounded-lg mb-4 text-gray-300 italic">
+                    <!-- AI summary will be injected here -->
+                </div>
+                <div id="aiSimulationResults" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- AI simulation results will be generated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const agentDataEl = document.getElementById('agentData');
+            const calculateBtn = document.getElementById('calculateBtn');
+            const importFileBtn = document.getElementById('importFileBtn');
+            const csvFileInput = document.getElementById('csvFileInput');
+            const deskTargetEl = document.getElementById('deskTarget');
+            const exchangeRateEl = document.getElementById('exchangeRate');
+            const rateStatusEl = document.getElementById('rateStatus');
+            const taxModeToggle = document.getElementById('taxModeToggle');
+            const taxModeLabel = document.getElementById('taxModeLabel');
+            const manualTaxOptions = document.getElementById('manualTaxOptions');
+            const manualTaxRateEl = document.getElementById('manualTaxRate');
+            const agentTableBody = document.getElementById('agentTableBody');
+            const deskBonusDisplay = document.getElementById('deskBonusDisplay');
+            const deskAchievedDisplay = document.getElementById('deskAchievedDisplay');
+            const taxAmountDisplay = document.getElementById('taxAmountDisplay');
+            const taxRateDisplay = document.getElementById('taxRateDisplay');
+            const netPayoutDisplay = document.getElementById('netPayoutDisplay');
+            const totalCommissionTHB = document.getElementById('totalCommissionTHB');
+            
+            // Goal Tracker Elements
+            const deskProgressPercentage = document.getElementById('deskProgressPercentage');
+            const deskProgressBar = document.getElementById('deskProgressBar');
+            const agentQuestLabel = document.getElementById('agentQuestLabel');
+            const agentHeadcountStatus = document.getElementById('agentHeadcountStatus');
+            const agentHeadcountIcons = document.getElementById('agentHeadcountIcons');
+            const agentQuestDescription = document.getElementById('agentQuestDescription');
+            const agentCommissionQuestProgress = document.getElementById('agentCommissionQuestProgress');
+            const agentCommissionProgressBar = document.getElementById('agentCommissionProgressBar');
+            const checkpoint100 = document.getElementById('checkpoint100');
+            const checkpoint110 = document.getElementById('checkpoint110');
+            const checkpoint120 = document.getElementById('checkpoint120');
+            const bonusLabel100 = document.getElementById('bonusLabel100');
+            const bonusLabel110 = document.getElementById('bonusLabel110');
+            const bonusLabel120 = document.getElementById('bonusLabel120');
+
+
+            // Graph Popup Elements
+            const openGraphPopupBtn = document.getElementById('openGraphPopupBtn');
+            const closeGraphPopupBtn = document.getElementById('closeGraphPopupBtn');
+            const graphPopup = document.getElementById('graphPopup');
+
+            // Breakdown Popup Elements
+            const openBreakdownBtn = document.getElementById('openBreakdownBtn');
+            const closeBreakdownPopupBtn = document.getElementById('closeBreakdownPopupBtn');
+            const breakdownPopup = document.getElementById('breakdownPopup');
+            const breakdownContent = document.getElementById('breakdownContent');
+            
+            // Simulation Elements
+            const simulationTargetEl = document.getElementById('simulationTarget');
+            const simulateBtn = document.getElementById('simulateBtn');
+            const simulationPopup = document.getElementById('simulationPopup');
+            const closeSimulationPopupBtn = document.getElementById('closeSimulationPopupBtn');
+            const simulationResults = document.getElementById('simulationResults');
+
+            // AI Simulation Elements
+            const aiQueryEl = document.getElementById('aiQuery');
+            const askAiBtn = document.getElementById('askAiBtn');
+            const aiBtnText = document.getElementById('aiBtnText');
+            const aiBtnSpinner = document.getElementById('aiBtnSpinner');
+            const aiResponsePopup = document.getElementById('aiResponsePopup');
+            const closeAiResponsePopupBtn = document.getElementById('closeAiResponsePopupBtn');
+            const aiSummaryEl = document.getElementById('aiSummary');
+            const aiSimulationResultsEl = document.getElementById('aiSimulationResults');
+            
+            let agents = [];
+            let performanceChart;
+            let popupPerformanceChart;
+
+            // --- Event Listeners ---
+            calculateBtn.addEventListener('click', runAllCalculations);
+            importFileBtn.addEventListener('click', () => csvFileInput.click());
+            csvFileInput.addEventListener('change', handleFileImport);
+            deskTargetEl.addEventListener('input', runAllCalculations);
+            exchangeRateEl.addEventListener('input', runAllCalculations);
+            taxModeToggle.addEventListener('change', handleTaxModeChange);
+            manualTaxRateEl.addEventListener('change', runAllCalculations);
+            
+            // Graph Popup Listeners
+            openGraphPopupBtn.addEventListener('click', showGraphPopup);
+            closeGraphPopupBtn.addEventListener('click', hideGraphPopup);
+            graphPopup.addEventListener('click', (e) => { if (e.target === graphPopup) hideGraphPopup(); });
+            
+            // Breakdown Popup Listeners
+            openBreakdownBtn.addEventListener('click', showBreakdownPopup);
+            closeBreakdownPopupBtn.addEventListener('click', hideBreakdownPopup);
+            breakdownPopup.addEventListener('click', (e) => { if (e.target === breakdownPopup) hideBreakdownPopup(); });
+            
+            // Simulation Popup Listeners
+            simulateBtn.addEventListener('click', runSimulation);
+            closeSimulationPopupBtn.addEventListener('click', hideSimulationPopup);
+            simulationPopup.addEventListener('click', (e) => { if (e.target === simulationPopup) hideSimulationPopup(); });
+
+            // AI Simulation Listeners
+            askAiBtn.addEventListener('click', handleAiQuery);
+            closeAiResponsePopupBtn.addEventListener('click', hideAiResponsePopup);
+            aiResponsePopup.addEventListener('click', (e) => { if (e.target === aiResponsePopup) hideAiResponsePopup(); });
+
+
+            // --- Popup Functions ---
+            function showGraphPopup() {
+                graphPopup.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                renderPerformanceGraph(true); 
+            }
+
+            function hideGraphPopup() {
+                graphPopup.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+            
+            function showBreakdownPopup() {
+                breakdownPopup.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideBreakdownPopup() {
+                breakdownPopup.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+            
+            function showSimulationPopup() {
+                simulationPopup.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideSimulationPopup() {
+                simulationPopup.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            function showAiResponsePopup() {
+                aiResponsePopup.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function hideAiResponsePopup() {
+                aiResponsePopup.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+            }
+
+            async function fetchExchangeRate() {
+                exchangeRateEl.disabled = true;
+                rateStatusEl.textContent = 'กำลังโหลด...';
+                try {
+                    const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const data = await response.json();
+                    const rate = data.rates.THB;
+                    if (rate) {
+                        exchangeRateEl.value = rate.toFixed(2);
+                        rateStatusEl.textContent = `Live @ ${rate.toFixed(4)}`;
+                    } else {
+                        throw new Error('THB rate not found');
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch exchange rate:', error);
+                    exchangeRateEl.value = '36.50'; 
+                    rateStatusEl.textContent = 'โหลดไม่สำเร็จ';
+                } finally {
+                    runAllCalculations();
+                }
+            }
+
+            function handleFileImport(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    agentDataEl.value = e.target.result;
+                    runAllCalculations(); 
+                };
+                reader.readAsText(file);
+                event.target.value = ''; 
+            }
+
+            function handleTaxModeChange() {
+                if (taxModeToggle.checked) { 
+                    manualTaxOptions.classList.remove('hidden');
+                    taxModeLabel.textContent = 'กำหนดเอง';
+                    exchangeRateEl.disabled = false;
+                    rateStatusEl.textContent = '';
+                    runAllCalculations();
+                } else { 
+                    manualTaxOptions.classList.add('hidden');
+                    taxModeLabel.textContent = 'อัตโนมัติ';
+                    fetchExchangeRate(); 
+                }
+            }
+
+            function parseAgentData() {
+                const data = agentDataEl.value.trim();
+                if (!data) {
+                    agents = [];
+                    return;
+                };
+
+                const rows = data.split('\n');
+                agents = rows
+                    .map(row => {
+                        const [name, target, achieved] = row.split('\t').map(item => item.trim());
+                        
+                        const parsedTarget = parseFloat(target);
+                        const parsedAchieved = parseFloat(achieved);
+
+                        if (name && !isNaN(parsedTarget) && !isNaN(parsedAchieved)) {
+                            return {
+                                name: name || 'N/A',
+                                target: parsedTarget,
+                                achieved: parsedAchieved,
+                                percentage: 0,
+                                commission: 0
+                            };
+                        }
+                        return null;
+                    })
+                    .filter(agent => agent && agent.target > 0);
+            }
+
+            function calculateIndividualCommissions() {
+                if (agents.length === 0) return;
+
+                agents.forEach(agent => {
+                    agent.percentage = (agent.achieved / agent.target) * 100;
+                });
+                const achieversCount = agents.filter(agent => agent.percentage >= 100).length;
+                agents.forEach(agent => {
+                    if (agent.percentage >= 200) {
+                        agent.commission = 50; 
+                    } else if (agent.percentage >= 100 && agent.percentage < 200) {
+                        agent.commission = (achieversCount >= 9) ? 30 : 0;
+                    } else {
+                        agent.commission = 0; 
+                    }
+                });
+            }
+
+            function calculateDeskBonus() {
+                const totalAchieved = agents.reduce((sum, agent) => sum + agent.achieved, 0);
+                const deskTarget = parseFloat(deskTargetEl.value) || 0;
+
+                if (deskTarget === 0) return { deskBonus: 0, deskPercentage: 0, totalAchieved: totalAchieved };
+
+                const deskPercentage = (totalAchieved / deskTarget) * 100;
+                let deskBonus = 0;
+
+                if (deskPercentage >= 120) {
+                    deskBonus = 300;
+                } else if (deskPercentage >= 110) { // 110% to 119.99%
+                    deskBonus = 250;
+                } else if (deskPercentage >= 100) { // 100% to 109.99%
+                    deskBonus = 200;
+                }
+
+                return { deskBonus, deskPercentage, totalAchieved };
+            }
+
+            function calculateTaxAndTotals(deskBonus, totalIndividualCommissionOverride = null) {
+                const totalIndividualCommission = totalIndividualCommissionOverride ?? agents.reduce((sum, agent) => sum + agent.commission, 0);
+                const totalCommissionUSD = totalIndividualCommission + deskBonus;
+                const exchangeRate = parseFloat(exchangeRateEl.value) || 36.5;
+                const totalCommissionTHB = totalCommissionUSD * exchangeRate;
+
+                let taxRate = 0;
+                let taxModeText = 'Auto';
+
+                if (taxModeToggle.checked) { 
+                    taxRate = parseFloat(manualTaxRateEl.value);
+                    taxModeText = `Manual (${taxRate}%)`;
+                } else { 
+                    if (totalCommissionTHB > 25000 && totalCommissionTHB <= 41667) taxRate = 10;
+                    else if (totalCommissionTHB > 12500 && totalCommissionTHB <= 25000) taxRate = 5;
+                    taxModeText = `Auto (${taxRate}%)`;
+                }
+
+                const taxAmount = (totalCommissionTHB * taxRate) / 100;
+                const netPayout = totalCommissionTHB - taxAmount;
+
+                return { totalIndividualCommission, totalCommissionUSD, totalCommissionTHB, taxAmount, netPayout, taxRate, taxModeText };
+            }
+            
+            // --- AI Simulation ---
+            async function handleAiQuery() {
+                const userQuery = aiQueryEl.value;
+                if (!userQuery) {
+                    alert("กรุณาพิมพ์คำถามของคุณในช่อง 'ถาม AI เพื่อวางแผน'");
+                    return;
+                }
+
+                toggleAiButtonLoading(true);
+
+                try {
+                    const params = await getAiSimulationParameters(userQuery);
+                    if (!params) {
+                        throw new Error("AI did not return valid parameters.");
+                    }
+                    
+                    const scenarios = runAiSimulation(params);
+                    renderAiSimulationResults(scenarios, params.aiSummary);
+                    showAiResponsePopup();
+
+                } catch (error) {
+                    console.error("Error during AI simulation:", error);
+                    aiSummaryEl.textContent = `เกิดข้อผิดพลาด: ${error.message}`;
+                    aiSimulationResultsEl.innerHTML = '<p class="text-gray-400 col-span-full text-center">ไม่สามารถประมวลผลคำขอได้</p>';
+                    showAiResponsePopup();
+                } finally {
+                    toggleAiButtonLoading(false);
+                }
+            }
+            
+            async function getAiSimulationParameters(userQuery) {
+                const currentDeskTarget = parseFloat(deskTargetEl.value);
+                const systemPrompt = `คุณคือผู้ช่วยวิเคราะห์ค่าคอมมิชชั่น หน้าที่ของคุณคือแปลงคำขอของผู้ใช้ให้เป็นออบเจ็กต์ JSON ที่มีโครงสร้างสำหรับการจำลองสถานการณ์
+
+ข้อมูลสำคัญ:
+- เป้าหมายทีม (Desk Target) ปัจจุบันคือ: ${currentDeskTarget}
+- โบนัสทีมมี 3 ระดับ:
+  - $200 เมื่อยอดทีม >= ${currentDeskTarget * 1.0} (100%)
+  - $250 เมื่อยอดทีม >= ${currentDeskTarget * 1.1} (110%)
+  - $300 เมื่อยอดทีม >= ${currentDeskTarget * 1.2} (120%)
+- Agent >= 200% ได้ $50
+- Agent 100-199% ได้ $30 (ต่อเมื่อมี Agent ถึงเป้า >= 9 คน)
+
+จงวิเคราะห์คำขอของผู้ใช้และส่งออก JSON ตาม schema ที่กำหนดเท่านั้น
+
+กฎ:
+- "targetNetTHB": คือยอดเงินบาทสุทธิที่ผู้ใช้ต้องการ
+- "deskBonus": หากผู้ใช้ระบุโบนัสทีมที่เจาะจง (เช่น "ต้องการแค่โบนัส $250") ให้ใส่ 250 หากไม่ระบุ ให้ใส่ -1
+- "maxDeskAchieved": หากผู้ใช้จำกัดยอดทีม (เช่น "ไม่เกิน 190") ให้ใส่ 190 หากไม่ระบุ ให้ใส่ -1
+- "maxAgents50": หากผู้ใช้จำกัดจำนวน Agent 200% (เช่น "มีดาวเด่นไม่เกิน 5 คน") ให้ใส่ 5 หากไม่ระบุ ให้ใส่ -1
+- "aiSummary": สรุปคำขอของผู้ใช้เป็นประโยคเดียว
+
+ตัวอย่าง:
+- User: "ต้องการ 35,000 บาท โดยไม่ให้ยอดทีมเกิน 190"
+- Output: {"targetNetTHB": 35000, "deskBonus": -1, "maxDeskAchieved": 190, "maxAgents50": -1, "aiSummary": "กำลังค้นหารูปแบบที่จะทำให้ได้ 35,000 บาท โดยมียอดทีมรวมไม่เกิน 190"}
+- User: "อยากได้ 20,000 โดยใช้โบนัสทีมขั้นต่ำ ($200) เท่านั้น"
+- Output: {"targetNetTHB": 20000, "deskBonus": 200, "maxDeskAchieved": -1, "maxAgents50": -1, "aiSummary": "กำลังค้นหารูปแบบที่จะทำให้ได้ 20,000 บาท โดยใช้โบนัสทีม $200 เท่านั้น"}
+`;
+
+                const schema = {
+                    "type": "OBJECT",
+                    "properties": {
+                        "targetNetTHB": { "type": "NUMBER", "description": "เป้าหมายค่าคอมมิชชั่นสุทธิ (THB)" },
+                        "deskBonus": { "type": "NUMBER", "description": "โบนัสทีมที่เจาะจง (0, 200, 250, 300) หรือ -1 ถ้าไม่ระบุ" },
+                        "maxDeskAchieved": { "type": "NUMBER", "description": "ยอดทีมสูงสุดที่อนุญาต หรือ -1 ถ้าไม่ระบุ" },
+                        "maxAgents50": { "type": "NUMBER", "description": "จำนวน Agent 200% สูงสุด หรือ -1 ถ้าไม่ระบุ" },
+                        "aiSummary": { "type": "STRING", "description": "สรุปคำขอของ AI" }
+                    },
+                    "required": ["targetNetTHB", "deskBonus", "maxDeskAchieved", "maxAgents50", "aiSummary"]
+                };
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: {
+                        parts: [{ text: systemPrompt }]
+                    },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: schema
+                    }
+                };
+
+                const apiKey = ""; // Leave as-is
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`AI API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) {
+                    throw new Error("AI did not return valid JSON.");
+                }
+                
+                return JSON.parse(jsonText);
+            }
+
+            function runAiSimulation(params) {
+                const exchangeRate = parseFloat(exchangeRateEl.value);
+                const deskTarget = parseFloat(deskTargetEl.value);
+                
+                const getPreTaxTHB = (net) => {
+                    if (net <= 12500 * (1 - 5/100)) return net; 
+                    if (net <= 25000 * (1 - 10/100)) return net / (1 - 5/100);
+                    return net / (1 - 10/100);
+                };
+                
+                const preTaxTHB = getPreTaxTHB(params.targetNetTHB);
+                const preTaxUSD = preTaxTHB / exchangeRate;
+
+                let strategies = [
+                    { title: "รูปแบบที่ 1: เน้นความร่วมมือ", deskBonus: 250, requiredPercentage: 110, findCombination: (usd) => findAgentMix(usd, 'min_50s') },
+                    { title: "รูปแบบที่ 2: กลยุทธ์สมดุล", deskBonus: 200, requiredPercentage: 100, findCombination: (usd) => findAgentMix(usd, 'balanced') },
+                    { title: "รูปแบบที่ 3: พึ่งพาดาวเด่น", deskBonus: 300, requiredPercentage: 120, findCombination: (usd) => findAgentMix(usd, 'max_50s') },
+                    { title: "รูปแบบที่ 4: ไม่พึ่งโบนัสทีม", deskBonus: 0, requiredPercentage: 0, findCombination: (usd) => findAgentMix(usd, 'balanced') }
+                ];
+
+                // Filter strategies based on AI params
+                if (params.deskBonus !== -1) {
+                    strategies = strategies.filter(s => s.deskBonus === params.deskBonus);
+                }
+
+                let scenarios = [];
+                for (const strategy of strategies) {
+                    const requiredIndividualUSD = preTaxUSD - strategy.deskBonus;
+                    if (requiredIndividualUSD < 0) continue;
+
+                    const mix = strategy.findCombination(requiredIndividualUSD);
+                    if (mix) {
+                        const { agents50, agents30 } = mix;
+                        const totalIndividualUSD = (agents50 * 50) + (agents30 * 30);
+                        
+                        const totalCommissionUSD = totalIndividualUSD + strategy.deskBonus;
+                        const totalCommissionTHB = totalCommissionUSD * exchangeRate;
+                        let taxRate = 0;
+                        if (totalCommissionTHB > 25000 && totalCommissionTHB <= 41667) taxRate = 10;
+                        else if (totalCommissionTHB > 12500 && totalCommissionTHB <= 25000) taxRate = 5;
+                        const taxAmount = (totalCommissionTHB * taxRate) / 100;
+                        const netPayout = totalCommissionTHB - taxAmount;
+
+                        scenarios.push({
+                            title: strategy.title,
+                            requiredTeamAchieved: deskTarget * (strategy.requiredPercentage / 100),
+                            deskBonus: strategy.deskBonus,
+                            agents50,
+                            agents30,
+                            totalIndividualUSD,
+                            totalCommissionUSD,
+                            totalCommissionTHB,
+                            taxAmount,
+                            netPayout
+                        });
+                    }
+                }
+
+                // Filter scenarios based on AI params
+                if (params.maxDeskAchieved !== -1) {
+                    scenarios = scenarios.filter(s => s.requiredTeamAchieved <= params.maxDeskAchieved);
+                }
+                if (params.maxAgents50 !== -1) {
+                    scenarios = scenarios.filter(s => s.agents50 <= params.maxAgents50);
+                }
+
+                return scenarios;
+            }
+
+            function renderAiSimulationResults(scenarios, aiSummary) {
+                aiSummaryEl.textContent = aiSummary || "นี่คือผลลัพธ์ที่ตรงกับเงื่อนไขของคุณ:";
+                aiSimulationResultsEl.innerHTML = '';
+                
+                if (scenarios.length === 0) {
+                    aiSimulationResultsEl.innerHTML = '<p class="text-gray-400 col-span-full text-center">AI ไม่พบสถานการณ์ที่ตรงกับเงื่อนไขที่ซับซ้อนของคุณ (เช่น เป้าหมายอาจสูงเกินไปสำหรับข้อจำกัดที่ตั้งไว้)</p>';
+                    return;
+                }
+
+                scenarios.forEach(s => {
+                    const card = `
+                        <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-semibold text-blue-400 mb-3">${s.title}</h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="font-medium text-gray-300 mb-2">สิ่งที่ต้องทำ:</p>
+                                    <div class="flex justify-between"><span>- ยอดทีมที่ต้องทำให้ได้:</span> <span class="font-semibold text-white">${s.requiredTeamAchieved.toLocaleString()}</span></div>
+                                    <div class="flex justify-between"><span>- Agent >= 200%:</span> <span class="font-semibold text-white">${s.agents50} คน</span></div>
+                                    <div class="flex justify-between"><span>- Agent 100%-199%:</span> <span class="font-semibold text-white">${s.agents30} คน</span></div>
+                                </div>
+                                 <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="font-medium text-gray-300 mb-2">สรุปการคำนวณ:</p>
+                                    <div class="flex justify-between"><span>ค่าคอมฯ บุคคลรวม:</span> <span class="font-semibold text-white">$${s.totalIndividualUSD.toLocaleString()}</span></div>
+                                    <div class="flex justify-between"><span>โบนัสทีม:</span> <span class="font-semibold text-white">$${s.deskBonus.toLocaleString()}</span></div>
+                                    <div class="flex justify-between border-t border-gray-600 mt-1 pt-1"><span>รวม (THB):</span> <span class="font-semibold text-white">฿${s.totalCommissionTHB.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                    <div class="flex justify-between"><span>ภาษีโดยประมาณ:</span> <span class="font-semibold text-red-400">- ฿${s.taxAmount.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                    <div class="flex justify-between text-base font-bold text-green-400 border-t-2 border-gray-500 mt-1 pt-1"><span>ยอดสุทธิ:</span> <span>฿${s.netPayout.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    aiSimulationResultsEl.innerHTML += card;
+                });
+            }
+
+            function toggleAiButtonLoading(isLoading) {
+                if (isLoading) {
+                    askAiBtn.disabled = true;
+                    aiBtnText.textContent = 'AI กำลังวิเคราะห์...';
+                    aiBtnSpinner.classList.remove('hidden');
+                } else {
+                    askAiBtn.disabled = false;
+                    aiBtnText.textContent = 'สอบถาม AI';
+                    aiBtnSpinner.classList.add('hidden');
+                }
+            }
+
+            // --- Standard Simulation ---
+            function findAgentMix(requiredUSD, preference) {
+                let candidates = [];
+                const max50s = Math.floor(requiredUSD / 50);
+
+                for (let num50s = 0; num50s <= max50s; num50s++) {
+                    const remainingUSD = requiredUSD - (num50s * 50);
+                    let num30s = Math.ceil(remainingUSD / 30);
+                    
+                    if (num30s > 0 && num50s + num30s < 9) {
+                        num30s = 9 - num50s;
+                    }
+                    
+                    if (num30s < 0) num30s = 0;
+
+                    const totalUSD = (num50s * 50) + (num30s * 30);
+                    candidates.push({ agents50: num50s, agents30: num30s, totalUSD: totalUSD, diff: totalUSD - requiredUSD });
+                }
+                
+                if (candidates.length === 0) return null;
+
+                let validCandidates = candidates.filter(c => c.diff >= 0);
+                if (validCandidates.length === 0) {
+                    validCandidates = candidates;
+                }
+
+                validCandidates.sort((a, b) => {
+                    if (a.diff !== b.diff) {
+                        return a.diff - b.diff;
+                    }
+                    if (preference === 'min_50s') {
+                        return a.agents50 - b.agents50;
+                    }
+                    if (preference === 'max_50s') {
+                        return b.agents50 - a.agents50;
+                    }
+                     if (preference === 'balanced') {
+                        const ratioA = a.agents30 / (a.agents50 + 1);
+                        const ratioB = b.agents30 / (b.agents50 + 1);
+                        return ratioB - ratioA;
+                    }
+                    return 0;
+                });
+                
+                return validCandidates[0];
+            }
+
+            function runSimulation() {
+                const targetNetTHB = parseFloat(simulationTargetEl.value);
+                if (!targetNetTHB || targetNetTHB <= 0) {
+                    alert("กรุณาใส่ยอดคอมมิชชั่นสุทธิที่ต้องการเป็นตัวเลขที่มากกว่า 0");
+                    return;
+                }
+
+                const aiParams = {
+                    targetNetTHB: targetNetTHB,
+                    deskBonus: -1,
+                    maxDeskAchieved: -1,
+                    maxAgents50: -1,
+                    aiSummary: `ผลการจำลองสถานการณ์สำหรับเป้าหมาย ${targetNetTHB.toLocaleString()} บาท`
+                };
+                
+                const scenarios = runAiSimulation(aiParams);
+                renderSimulationResults(scenarios);
+                showSimulationPopup();
+            }
+
+            function renderSimulationResults(scenarios) {
+                simulationResults.innerHTML = '';
+                if (scenarios.length === 0) {
+                    simulationResults.innerHTML = '<p class="text-gray-400 col-span-full text-center">ไม่สามารถสร้างสถานการณ์สำหรับเป้าหมายนี้ได้ ลองปรับยอดเงินที่ต้องการ</p>';
+                    return;
+                }
+
+                scenarios.forEach(s => {
+                    const card = `
+                        <div class="bg-gray-900 p-4 rounded-lg border border-gray-700">
+                            <h3 class="text-lg font-semibold text-blue-400 mb-3">${s.title}</h3>
+                            <div class="space-y-3 text-sm">
+                                <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="font-medium text-gray-300 mb-2">สิ่งที่ต้องทำ:</p>
+                                    <div class="flex justify-between"><span>- ยอดทีมที่ต้องทำให้ได้:</span> <span class="font-semibold text-white">${s.requiredTeamAchieved.toLocaleString()}</span></div>
+                                    <div class="flex justify-between"><span>- Agent >= 200%:</span> <span class="font-semibold text-white">${s.agents50} คน</span></div>
+                                    <div class="flex justify-between"><span>- Agent 100%-199%:</span> <span class="font-semibold text-white">${s.agents30} คน</span></div>
+                                </div>
+                                 <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="font-medium text-gray-300 mb-2">สรุปการคำนวณ:</p>
+                                    <div class="flex justify-between"><span>ค่าคอมฯ บุคคลรวม:</span> <span class="font-semibold text-white">$${s.totalIndividualUSD.toLocaleString()}</span></div>
+                                    <div class="flex justify-between"><span>โบนัสทีม:</span> <span class="font-semibold text-white">$${s.deskBonus.toLocaleString()}</span></div>
+                                    <div class="flex justify-between border-t border-gray-600 mt-1 pt-1"><span>รวม (THB):</span> <span class="font-semibold text-white">฿${s.totalCommissionTHB.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                    <div class="flex justify-between"><span>ภาษีโดยประมาณ:</span> <span class="font-semibold text-red-400">- ฿${s.taxAmount.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                    <div class="flex justify-between text-base font-bold text-green-400 border-t-2 border-gray-500 mt-1 pt-1"><span>ยอดสุทธิ:</span> <span>฿${s.netPayout.toLocaleString('th-TH', {minimumFractionDigits:2, maximumFractionDigits:2})}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    simulationResults.innerHTML += card;
+                });
+            }
+            
+            // --- Graph & UI Rendering ---
+            function renderPerformanceGraph(isPopup = false) {
+                const canvasId = isPopup ? 'popupPerformanceChart' : 'performanceChart';
+                let chartInstance = isPopup ? popupPerformanceChart : performanceChart;
+                
+                const ctx = document.getElementById(canvasId).getContext('2d');
+                if (!ctx) return;
+                if (chartInstance) chartInstance.destroy();
+                
+                if (agents.length === 0) {
+                     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                     ctx.font = "16px 'Kanit'";
+                     ctx.fillStyle = '#6b7280';
+                     ctx.textAlign = 'center';
+                     ctx.fillText('นำเข้าข้อมูลเพื่อแสดงกราฟ', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                     return;
+                }
+
+                const labels = agents.map(agent => agent.name);
+                const data = agents.map(agent => agent.percentage);
+                const backgroundColors = agents.map(agent => {
+                    if (agent.percentage >= 200) return 'rgba(248, 113, 113, 0.7)';
+                    if (agent.percentage >= 100) return 'rgba(96, 165, 250, 0.7)';
+                    return 'rgba(250, 204, 21, 0.7)';
+                });
+                const borderColors = agents.map(agent => {
+                    if (agent.percentage >= 200) return 'rgba(248, 113, 113, 1)';
+                    if (agent.percentage >= 100) return 'rgba(96, 165, 250, 1)';
+                    return 'rgba(250, 204, 21, 1)';
+                });
+
+                const newChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Achieved %', data, backgroundColor: backgroundColors, borderColor: borderColors, borderWidth: 1 }] },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.1)' }, ticks: { color: '#d1d5db', callback: value => value + '%' } },
+                            x: { grid: { display: false }, ticks: { color: '#d1d5db' } }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'ประสิทธิภาพ Agent (% Achieved)', color: '#f9fafb', font: { size: 16, family: "'Kanit', sans-serif" } },
+                            tooltip: { callbacks: { label: context => `${context.dataset.label || ''}: ${context.parsed.y.toFixed(2)}%` } },
+                            annotation: {
+                                annotations: {
+                                    targetLine: { type: 'line', yMin: 100, yMax: 100, borderColor: '#f9fafb', borderWidth: 2, borderDash: [6, 6], label: { content: '100% Target', enabled: true, position: 'end', color: '#f9fafb', backgroundColor: 'rgba(31, 41, 55, 0.6)' } }
+                                }
+                            }
+                        }
+                    }
+                });
+                if (isPopup) popupPerformanceChart = newChart;
+                else performanceChart = newChart;
+            }
+
+            function renderBreakdownPopup(deskBonusResult, taxResult) {
+                const { deskBonus, deskPercentage, totalAchieved } = deskBonusResult;
+                const { totalIndividualCommission, totalCommissionUSD, totalCommissionTHB, taxAmount, netPayout, taxRate, taxModeText } = taxResult;
+                const deskTarget = parseFloat(deskTargetEl.value) || 0;
+                const exchangeRate = parseFloat(exchangeRateEl.value) || 36.5;
+
+                const commission50Earners = agents.filter(a => a.commission === 50);
+                const commission30Earners = agents.filter(a => a.commission === 30);
+                const total50Commission = commission50Earners.reduce((sum, agent) => sum + agent.commission, 0);
+                const total30Commission = commission30Earners.reduce((sum, agent) => sum + agent.commission, 0);
+                
+                let agentComHTML = '';
+                if (commission50Earners.length > 0) {
+                    agentComHTML += `<div class="mb-3">
+                        <p class="text-gray-400 font-medium">กลุ่มโบนัส $50 (>=200%)</p>
+                        ${commission50Earners.map(agent => `<div class="flex justify-between text-gray-300 pl-2"><span>- ${agent.name}</span><span>$${agent.commission.toLocaleString()}</span></div>`).join('')}
+                        <div class="flex justify-between font-semibold text-white pt-1 mt-1 border-t border-gray-700">
+                            <span>ยอดรวมกลุ่ม $50</span>
+                            <span class="text-right">$${total50Commission.toLocaleString()}
+                                <br><span class="text-sm font-normal text-gray-400">฿${(total50Commission * exchangeRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </span>
+                        </div>
+                    </div>`;
+                }
+                if (commission30Earners.length > 0) {
+                     agentComHTML += `<div class="mb-3">
+                        <p class="text-gray-400 font-medium">กลุ่มโบนัส $30 (100% - 199%)</p>
+                        ${commission30Earners.map(agent => `<div class="flex justify-between text-gray-300 pl-2"><span>- ${agent.name}</span><span>$${agent.commission.toLocaleString()}</span></div>`).join('')}
+                        <div class="flex justify-between font-semibold text-white pt-1 mt-1 border-t border-gray-700">
+                            <span>ยอดรวมกลุ่ม $30</span>
+                            <span class="text-right">$${total30Commission.toLocaleString()}
+                                 <br><span class="text-sm font-normal text-gray-400">฿${(total30Commission * exchangeRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </span>
+                        </div>
+                    </div>`;
+                }
+
+                if (agentComHTML === '') {
+                     agentComHTML = `<div class="text-gray-500">ไม่มี Agent คนใดได้รับค่าคอมมิชชั่น</div>`;
+                }
+
+                breakdownContent.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                        <div class="space-y-2">
+                            <h3 class="font-semibold text-white border-b border-gray-600 pb-1 mb-3">1. ค่าคอมมิชชั่นรายบุคคล</h3>
+                            ${agentComHTML}
+                            <div class="flex justify-between font-bold text-white pt-2 mt-4 border-t-2 border-gray-500">
+                                <span>ยอดรวมทั้งหมด</span>
+                                <span class="text-right">$${totalIndividualCommission.toLocaleString()}
+                                    <br><span class="text-sm font-normal text-gray-400">฿${(totalIndividualCommission * exchangeRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="space-y-6 flex flex-col">
+                            <div class="space-y-2">
+                                <h3 class="font-semibold text-white border-b border-gray-600 pb-1">2. โบนัสทีม (Desk Bonus)</h3>
+                                <div class="flex justify-between text-gray-300"><span>ยอด Achieved รวม</span><span>${totalAchieved.toLocaleString()}</span></div>
+                                <div class="flex justify-between text-gray-300"><span>เป้าหมายทีม</span><span>${deskTarget.toLocaleString()}</span></div>
+                                <div class="flex justify-between text-gray-300"><span>% เทียบเป้าหมาย</span><span class="${deskPercentage >= 100 ? 'text-green-400' : 'text-red-400'}">${deskPercentage.toFixed(2)}%</span></div>
+                                <div class="flex justify-between font-bold text-white pt-2">
+                                    <span>โบนัสที่ได้รับ</span>
+                                    <span class="text-right">$${deskBonus.toLocaleString()}
+                                        <br><span class="text-sm font-normal text-gray-400">฿${(deskBonus * exchangeRate).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="font-semibold text-white border-b border-gray-600 pb-1">3. ยอดรวมก่อนหักภาษี</h3>
+                                <div class="flex justify-between text-gray-300"><span>ค่าคอมฯ รายบุคคล</span><span>$${totalIndividualCommission.toLocaleString()}</span></div>
+                                <div class="flex justify-between text-gray-300"><span>โบนัสทีม</span><span>$${deskBonus.toLocaleString()}</span></div>
+                                <div class="flex justify-between font-bold text-blue-400 pt-2">
+                                    <span>ยอดรวมทั้งหมด</span>
+                                    <span class="text-right">$${totalCommissionUSD.toLocaleString()}
+                                        <br><span class="text-lg font-bold text-white">฿${totalCommissionTHB.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-gray-400 text-xs pt-1">
+                                    <span>(อัตราแลกเปลี่ยน @ ${exchangeRate.toFixed(4)} THB/USD)</span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="font-semibold text-white border-b border-gray-600 pb-1">4. การคำนวณภาษีเงินได้</h3>
+                                <div class="flex justify-between text-gray-300"><span>ยอดรวม (THB)</span><span>฿${totalCommissionTHB.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                                <div class="flex justify-between text-gray-300"><span>อัตราภาษี (${taxModeText})</span><span>${taxRate}%</span></div>
+                                <div class="flex justify-between font-bold text-red-400 pt-2">
+                                    <span>ยอดภาษีที่ต้องชำระ</span>
+                                    <span>- ฿${taxAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                            </div>
+                             <div class="space-y-2 bg-gray-900 p-3 rounded-lg mt-auto">
+                                <h3 class="font-semibold text-white text-base">5. ยอดสุทธิที่จ่าย</h3>
+                                <div class="flex justify-between text-lg font-bold text-green-400 pt-1">
+                                    <span>ยอดสุทธิสุดท้าย</span>
+                                    <span>฿${netPayout.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderUI(deskBonusResult, taxResult) {
+                agentTableBody.innerHTML = '';
+                if (agents.length === 0) {
+                     agentTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-8 text-gray-500">โปรดนำเข้าข้อมูล Agent เพื่อเริ่มการคำนวณ</td></tr>';
+                } else {
+                    agents.forEach(agent => {
+                        const percentageClass = agent.percentage >= 200 ? 'text-red-400' : agent.percentage >= 100 ? 'text-blue-400' : 'text-yellow-400';
+                        const row = `
+                            <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                                <td class="p-3 font-medium">${agent.name}</td>
+                                <td class="p-3 text-right">${agent.target.toLocaleString()}</td>
+                                <td class="p-3 text-right">${agent.achieved.toLocaleString()}</td>
+                                <td class="p-3 text-right font-semibold ${percentageClass}">${agent.percentage.toFixed(2)}%</td>
+                                <td class="p-3 text-right font-bold text-blue-400">$${agent.commission.toLocaleString()}</td>
+                            </tr>
+                        `;
+                        agentTableBody.innerHTML += row;
+                    });
+                }
+                
+                const deskPercentage = deskBonusResult.deskPercentage;
+                deskProgressPercentage.textContent = `${deskPercentage.toFixed(2)}%`;
+                const visualPercentage = Math.min((deskPercentage / 120) * 100, 100);
+                deskProgressBar.style.width = `${visualPercentage}%`;
+                
+                deskProgressBar.className = 'h-5 rounded-full transition-all duration-500';
+                if (deskPercentage >= 120) {
+                    deskProgressBar.classList.add('bg-amber-500');
+                } else if (deskPercentage >= 110) {
+                    deskProgressBar.classList.add('bg-green-500');
+                } else if (deskPercentage >= 100) {
+                    deskProgressBar.classList.add('bg-blue-500');
+                } else {
+                     deskProgressBar.classList.add('bg-blue-600');
+                }
+                
+                checkpoint100.classList.toggle('achieved', deskPercentage >= 100);
+                checkpoint110.classList.toggle('achieved', deskPercentage >= 110);
+                checkpoint120.classList.toggle('achieved', deskPercentage >= 120);
+                bonusLabel100.classList.toggle('text-amber-400', deskPercentage >= 100);
+                bonusLabel110.classList.toggle('text-amber-400', deskPercentage >= 110);
+                bonusLabel120.classList.toggle('text-amber-400', deskPercentage >= 120);
+
+                const achieversCount = agents.filter(agent => agent.percentage >= 100).length;
+                const exchangeRate = parseFloat(exchangeRateEl.value) || 36.5;
+
+                if (achieversCount >= 9) {
+                    agentHeadcountIcons.classList.add('hidden');
+                    agentCommissionQuestProgress.classList.remove('hidden');
+                    
+                    agentQuestLabel.textContent = 'ภารกิจต่อเนื่อง: รวมพลัง Agent';
+                    
+                    const commission30Earners = agents.filter(agent => agent.percentage >= 100 && agent.percentage < 200);
+                    const commissionFor30GroupUSD = commission30Earners.length * 30;
+                    const commissionFor30GroupTHB = commissionFor30GroupUSD * exchangeRate;
+
+                    agentHeadcountStatus.innerHTML = `
+                        <div class="flex items-baseline justify-end gap-2 sm:gap-4">
+                            <span class="text-lg font-bold text-green-400">${achieversCount} คน</span>
+                            <span class="text-base text-gray-400">/</span>
+                            <span class="text-lg font-bold text-blue-400">฿${commissionFor30GroupTHB.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                    `;
+                    
+                    agentQuestDescription.textContent = `ค่าคอมมิชชั่นรวมของกลุ่มโบนัส $30 ที่ปลดล็อกแล้ว`;
+                    
+                    const maxTHB = 25000;
+                    const progressPercent = Math.min((commissionFor30GroupTHB / maxTHB) * 100, 100);
+                    agentCommissionProgressBar.style.width = `${progressPercent}%`;
+
+                    const formattedTHB = commissionFor30GroupTHB.toLocaleString('th-TH', { maximumFractionDigits: 0 });
+                    if (progressPercent > 15) {
+                        agentCommissionProgressBar.textContent = `฿ ${formattedTHB}`;
+                    } else {
+                        agentCommissionProgressBar.textContent = '';
+                    }
+
+                    document.getElementById('thb_checkpoint_5k').classList.toggle('achieved', commissionFor30GroupTHB >= 5000);
+                    document.getElementById('thb_checkpoint_9k').classList.toggle('achieved', commissionFor30GroupTHB >= 9000);
+                    document.getElementById('thb_checkpoint_15k').classList.toggle('achieved', commissionFor30GroupTHB >= 15000);
+                    document.getElementById('thb_checkpoint_18k').classList.toggle('achieved', commissionFor30GroupTHB >= 18000);
+                    document.getElementById('thb_checkpoint_20k').classList.toggle('achieved', commissionFor30GroupTHB >= 20000);
+                    document.getElementById('thb_checkpoint_25k').classList.toggle('achieved', commissionFor30GroupTHB >= 25000);
+
+                } else {
+                    agentHeadcountIcons.classList.remove('hidden');
+                    agentCommissionQuestProgress.classList.add('hidden');
+
+                    agentQuestLabel.textContent = 'ภารกิจ: รวมพลัง Agent';
+                    agentHeadcountStatus.innerHTML = `<span class="text-lg font-bold text-red-400">${achieversCount} / 9</span>`;
+                    
+                    agentQuestDescription.textContent = `ต้องมี Agent ทำได้ 100% ครบ 9 คน เพื่อปลดล็อกโบนัส $30`;
+                    
+                    agentHeadcountIcons.innerHTML = '';
+                    for (let i = 0; i < 9; i++) {
+                        const icon = document.createElement('div');
+                        icon.classList.add('mission-icon');
+                        if (i < achieversCount) {
+                            icon.classList.add('achieved');
+                        }
+                        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>`;
+                        agentHeadcountIcons.appendChild(icon);
+                    }
+                }
+                
+                deskBonusDisplay.textContent = `$${deskBonusResult.deskBonus.toLocaleString()}`;
+                deskAchievedDisplay.textContent = `${deskBonusResult.deskPercentage.toFixed(2)}% ของเป้าหมาย`;
+                taxAmountDisplay.textContent = `- ฿${taxResult.taxAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                taxRateDisplay.textContent = `คำนวณแบบ ${taxResult.taxModeText}`;
+                netPayoutDisplay.textContent = `฿${taxResult.netPayout.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                totalCommissionTHB.textContent = `รวมคอมมิชชั่น ฿${taxResult.totalCommissionTHB.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                
+                renderPerformanceGraph();
+            }
+
+            function runAllCalculations() {
+                parseAgentData();
+                calculateIndividualCommissions();
+                const deskBonusResult = calculateDeskBonus();
+                const taxResult = calculateTaxAndTotals(deskBonusResult.deskBonus);
+                renderUI(deskBonusResult, taxResult);
+                renderBreakdownPopup(deskBonusResult, taxResult);
+            }
+            
+            function initializeDashboard() {
+                if (!taxModeToggle.checked) {
+                    fetchExchangeRate();
+                } else {
+                    runAllCalculations();
+                }
+            }
+
+            initializeDashboard();
+        });
+    </script>
+</body>
+</html>
